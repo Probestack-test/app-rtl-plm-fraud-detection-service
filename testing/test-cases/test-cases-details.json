@@ -1,0 +1,222 @@
+{
+  "artifactId" : "fraud-detection-service",
+  "generatedAt" : "2026-10-03T22:22:40.549348764Z",
+  "testCaseCount" : 18,
+  "testCases" : [ {
+    "category" : "Positive",
+    "name" : "[POSITIVE] POST /score",
+    "description" : "Happy path: valid request should return 200",
+    "request" : {
+      "method" : "POST",
+      "url" : "{{baseUrl}}/score",
+      "path" : [ "score" ],
+      "headers" : { },
+      "body" : null
+    },
+    "assertions" : [ "pm.test(\"Status code is 200\", function() { if(pm.response.code !== 200) throw new Error(\"Expected 200 but got \" + pm.response.code); });" ]
+  }, {
+    "category" : "Positive",
+    "name" : "[POSITIVE] GET /rules",
+    "description" : "Happy path: valid request should return 200",
+    "request" : {
+      "method" : "GET",
+      "url" : "{{baseUrl}}/rules",
+      "path" : [ "rules" ],
+      "headers" : { },
+      "body" : null
+    },
+    "assertions" : [ "pm.test(\"Status code is 200\", function() { if(pm.response.code !== 200) throw new Error(\"Expected 200 but got \" + pm.response.code); });" ]
+  }, {
+    "category" : "Positive",
+    "name" : "[POSITIVE] POST /rules",
+    "description" : "Happy path: valid request should return 201",
+    "request" : {
+      "method" : "POST",
+      "url" : "{{baseUrl}}/rules",
+      "path" : [ "rules" ],
+      "headers" : { },
+      "body" : null
+    },
+    "assertions" : [ "pm.test(\"Status code is 201\", function() { if(pm.response.code !== 201) throw new Error(\"Expected 201 but got \" + pm.response.code); });" ]
+  }, {
+    "category" : "Positive",
+    "name" : "[POSITIVE] PUT /rules/{ruleId}",
+    "description" : "Happy path: valid request should return 200",
+    "request" : {
+      "method" : "PUT",
+      "url" : "{{baseUrl}}/rules/{ruleId}",
+      "path" : [ "rules", "{ruleId}" ],
+      "headers" : { },
+      "body" : null
+    },
+    "assertions" : [ "pm.test(\"Status code is 200\", function() { if(pm.response.code !== 200) throw new Error(\"Expected 200 but got \" + pm.response.code); });" ]
+  }, {
+    "category" : "Positive",
+    "name" : "[POSITIVE] DELETE /rules/{ruleId}",
+    "description" : "Happy path: valid request should return 204",
+    "request" : {
+      "method" : "DELETE",
+      "url" : "{{baseUrl}}/rules/{ruleId}",
+      "path" : [ "rules", "{ruleId}" ],
+      "headers" : { },
+      "body" : null
+    },
+    "assertions" : [ "pm.test(\"Status code is 204\", function() { if(pm.response.code !== 204) throw new Error(\"Expected 204 but got \" + pm.response.code); });" ]
+  }, {
+    "category" : "Positive",
+    "name" : "[POSITIVE] GET /cases",
+    "description" : "Happy path: valid request should return 200",
+    "request" : {
+      "method" : "GET",
+      "url" : "{{baseUrl}}/cases",
+      "path" : [ "cases" ],
+      "headers" : { },
+      "body" : null
+    },
+    "assertions" : [ "pm.test(\"Status code is 200\", function() { if(pm.response.code !== 200) throw new Error(\"Expected 200 but got \" + pm.response.code); });" ]
+  }, {
+    "category" : "Negative",
+    "name" : "[NEGATIVE] GET /rules",
+    "description" : "Invalid type for parameter enabled (expected boolean)",
+    "request" : {
+      "method" : "GET",
+      "url" : "{{baseUrl}}/rules",
+      "path" : [ "rules" ],
+      "headers" : { },
+      "body" : null
+    },
+    "assertions" : [ "pm.test(\"Status code is 400\", function() { if(pm.response.code !== 400) throw new Error(\"Expected 400 but got \" + pm.response.code); });" ]
+  }, {
+    "category" : "Negative",
+    "name" : "[NEGATIVE] PUT /rules/{ruleId}",
+    "description" : "Missing required path parameter: ruleId",
+    "request" : {
+      "method" : "PUT",
+      "url" : "{{baseUrl}}/rules/{ruleId}",
+      "path" : [ "rules", "{ruleId}" ],
+      "headers" : { },
+      "body" : null
+    },
+    "assertions" : [ "pm.test(\"Status code is 400\", function() { if(pm.response.code !== 400) throw new Error(\"Expected 400 but got \" + pm.response.code); });" ]
+  }, {
+    "category" : "Negative",
+    "name" : "[NEGATIVE] PUT /rules/{ruleId}",
+    "description" : "Invalid type for parameter ruleId (expected string)",
+    "request" : {
+      "method" : "PUT",
+      "url" : "{{baseUrl}}/rules/{ruleId}",
+      "path" : [ "rules", "{ruleId}" ],
+      "headers" : { },
+      "body" : null
+    },
+    "assertions" : [ "pm.test(\"Status code is 400\", function() { if(pm.response.code !== 400) throw new Error(\"Expected 400 but got \" + pm.response.code); });" ]
+  }, {
+    "category" : "Negative",
+    "name" : "[NEGATIVE] DELETE /rules/{ruleId}",
+    "description" : "Missing required path parameter: ruleId",
+    "request" : {
+      "method" : "DELETE",
+      "url" : "{{baseUrl}}/rules/{ruleId}",
+      "path" : [ "rules", "{ruleId}" ],
+      "headers" : { },
+      "body" : null
+    },
+    "assertions" : [ "pm.test(\"Status code is 400\", function() { if(pm.response.code !== 400) throw new Error(\"Expected 400 but got \" + pm.response.code); });" ]
+  }, {
+    "category" : "Negative",
+    "name" : "[NEGATIVE] DELETE /rules/{ruleId}",
+    "description" : "Invalid type for parameter ruleId (expected string)",
+    "request" : {
+      "method" : "DELETE",
+      "url" : "{{baseUrl}}/rules/{ruleId}",
+      "path" : [ "rules", "{ruleId}" ],
+      "headers" : { },
+      "body" : null
+    },
+    "assertions" : [ "pm.test(\"Status code is 400\", function() { if(pm.response.code !== 400) throw new Error(\"Expected 400 but got \" + pm.response.code); });" ]
+  }, {
+    "category" : "Negative",
+    "name" : "[NEGATIVE] GET /cases",
+    "description" : "Invalid type for parameter state (expected string)",
+    "request" : {
+      "method" : "GET",
+      "url" : "{{baseUrl}}/cases",
+      "path" : [ "cases" ],
+      "headers" : { },
+      "body" : null
+    },
+    "assertions" : [ "pm.test(\"Status code is 400\", function() { if(pm.response.code !== 400) throw new Error(\"Expected 400 but got \" + pm.response.code); });" ]
+  }, {
+    "category" : "Performance",
+    "name" : "[PERFORMANCE] POST /score",
+    "description" : "Performance: response time should be < 2000ms",
+    "request" : {
+      "method" : "POST",
+      "url" : "{{baseUrl}}/score",
+      "path" : [ "score" ],
+      "headers" : { },
+      "body" : null
+    },
+    "assertions" : [ "pm.test(\"Response time < 2000 ms\", function() { if(pm.response.responseTime > 2000) throw new Error(\"Response time \" + pm.response.responseTime + \"ms exceeds 2000ms\"); });" ]
+  }, {
+    "category" : "Performance",
+    "name" : "[PERFORMANCE] GET /rules",
+    "description" : "Performance: response time should be < 2000ms",
+    "request" : {
+      "method" : "GET",
+      "url" : "{{baseUrl}}/rules",
+      "path" : [ "rules" ],
+      "headers" : { },
+      "body" : null
+    },
+    "assertions" : [ "pm.test(\"Response time < 2000 ms\", function() { if(pm.response.responseTime > 2000) throw new Error(\"Response time \" + pm.response.responseTime + \"ms exceeds 2000ms\"); });" ]
+  }, {
+    "category" : "Performance",
+    "name" : "[PERFORMANCE] POST /rules",
+    "description" : "Performance: response time should be < 2000ms",
+    "request" : {
+      "method" : "POST",
+      "url" : "{{baseUrl}}/rules",
+      "path" : [ "rules" ],
+      "headers" : { },
+      "body" : null
+    },
+    "assertions" : [ "pm.test(\"Response time < 2000 ms\", function() { if(pm.response.responseTime > 2000) throw new Error(\"Response time \" + pm.response.responseTime + \"ms exceeds 2000ms\"); });" ]
+  }, {
+    "category" : "Performance",
+    "name" : "[PERFORMANCE] PUT /rules/{ruleId}",
+    "description" : "Performance: response time should be < 2000ms",
+    "request" : {
+      "method" : "PUT",
+      "url" : "{{baseUrl}}/rules/{ruleId}",
+      "path" : [ "rules", "{ruleId}" ],
+      "headers" : { },
+      "body" : null
+    },
+    "assertions" : [ "pm.test(\"Response time < 2000 ms\", function() { if(pm.response.responseTime > 2000) throw new Error(\"Response time \" + pm.response.responseTime + \"ms exceeds 2000ms\"); });" ]
+  }, {
+    "category" : "Performance",
+    "name" : "[PERFORMANCE] DELETE /rules/{ruleId}",
+    "description" : "Performance: response time should be < 2000ms",
+    "request" : {
+      "method" : "DELETE",
+      "url" : "{{baseUrl}}/rules/{ruleId}",
+      "path" : [ "rules", "{ruleId}" ],
+      "headers" : { },
+      "body" : null
+    },
+    "assertions" : [ "pm.test(\"Response time < 2000 ms\", function() { if(pm.response.responseTime > 2000) throw new Error(\"Response time \" + pm.response.responseTime + \"ms exceeds 2000ms\"); });" ]
+  }, {
+    "category" : "Performance",
+    "name" : "[PERFORMANCE] GET /cases",
+    "description" : "Performance: response time should be < 2000ms",
+    "request" : {
+      "method" : "GET",
+      "url" : "{{baseUrl}}/cases",
+      "path" : [ "cases" ],
+      "headers" : { },
+      "body" : null
+    },
+    "assertions" : [ "pm.test(\"Response time < 2000 ms\", function() { if(pm.response.responseTime > 2000) throw new Error(\"Response time \" + pm.response.responseTime + \"ms exceeds 2000ms\"); });" ]
+  } ]
+}
