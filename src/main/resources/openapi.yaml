@@ -1,0 +1,697 @@
+openapi: 3.0.3
+info:
+  contact:
+    email: risk@probestack.io
+    name: Risk Engineering Team
+  description: |
+    Real-time risk scoring for transactions, with rule management and case review.
+    This API is used as the source specification to automatically generate
+    an API Gateway proxy (Kong or Apigee) with routing, authentication,
+    rate limiting, and caching policies.
+  title: Fraud Detection Service
+  version: 1.0.0
+  x-proxy-config:
+    upstream-url: https://fraud-service.probestack.io
+    service-name: fraud-detection-gateway
+    rate-limit: 800/minute
+    cors-enabled: false
+    retries: 1
+servers:
+- description: Production Gateway
+  url: https://gateway.probestack.io/fraud/v1
+- description: Local Gateway
+  url: http://localhost:8000/fraud/v1
+security:
+- ApiKeyAuth: []
+tags:
+- description: Real-time transaction risk evaluation
+  name: Scoring
+- description: Manage detection rules
+  name: Rules
+- description: Review flagged transactions
+  name: Cases
+paths:
+  /score:
+    post:
+      description: Evaluates a transaction against the active rule set and returns
+        a risk score with a recommended action. Latency budget is 200ms.
+      operationId: scoreTransaction
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScoreRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScoreResponse"
+          description: Transaction scored successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Invalid request payload or parameters.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Missing or invalid API Key.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Internal server error.
+      summary: Score a transaction
+      tags:
+      - Scoring
+      x-proxy-route:
+        methods:
+        - POST
+        plugins:
+        - name: rate-limiting
+          config:
+            minute: 800
+        - name: request-transformer
+          config:
+            add:
+              headers:
+              - "X-Risk-Correlation:${uuid}"
+      x-content-type: application/json
+      x-accepts: application/json
+      x-tags:
+      - tag: Scoring
+  /rules:
+    get:
+      description: "Returns all rules in the active rule set, optionally filtered\
+        \ by enabled state."
+      operationId: listRules
+      parameters:
+      - description: Filter to only enabled or only disabled rules
+        explode: true
+        in: query
+        name: enabled
+        required: false
+        schema:
+          type: boolean
+        style: form
+      - description: Filter by rule severity
+        explode: true
+        in: query
+        name: severity
+        required: false
+        schema:
+          enum:
+          - LOW
+          - MEDIUM
+          - HIGH
+          - CRITICAL
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/Rule"
+                type: array
+          description: Rules fetched successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Missing or invalid API Key.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Internal server error.
+      summary: List detection rules
+      tags:
+      - Rules
+      x-proxy-route:
+        methods:
+        - GET
+        plugins:
+        - name: proxy-cache
+          config:
+            cache_ttl: 120
+      x-accepts: application/json
+      x-tags:
+      - tag: Rules
+    post:
+      description: Adds a new rule to the active rule set. Rules are evaluated in
+        ascending priority order.
+      operationId: createRule
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRuleRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rule"
+          description: Rule created successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Invalid request payload or parameters.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Missing or invalid API Key.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Internal server error.
+      summary: Create a detection rule
+      tags:
+      - Rules
+      x-proxy-route:
+        methods:
+        - POST
+        plugins:
+        - name: rate-limiting
+          config:
+            minute: 30
+      x-content-type: application/json
+      x-accepts: application/json
+      x-tags:
+      - tag: Rules
+  /rules/{ruleId}:
+    delete:
+      description: Permanently removes a rule from the active set. Historical scores
+        are unaffected.
+      operationId: deleteRule
+      parameters:
+      - explode: false
+        in: path
+        name: ruleId
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: Rule deleted successfully (no content)
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Missing or invalid API Key.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Resource not found.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Internal server error.
+      summary: Delete a rule
+      tags:
+      - Rules
+      x-proxy-route:
+        methods:
+        - DELETE
+        plugins: []
+      x-accepts: application/json
+      x-tags:
+      - tag: Rules
+    put:
+      description: "Modifies a rule's expression, severity, or enabled state. Changes\
+        \ take effect on the next evaluation."
+      operationId: updateRule
+      parameters:
+      - explode: false
+        in: path
+        name: ruleId
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRuleRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rule"
+          description: Rule updated successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Invalid request payload or parameters.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Missing or invalid API Key.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Resource not found.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Internal server error.
+      summary: Update a rule
+      tags:
+      - Rules
+      x-proxy-route:
+        methods:
+        - PUT
+        plugins:
+        - name: rate-limiting
+          config:
+            minute: 30
+      x-content-type: application/json
+      x-accepts: application/json
+      x-tags:
+      - tag: Rules
+  /cases:
+    get:
+      description: "Returns flagged transactions awaiting manual review, filtered\
+        \ by state and date range."
+      operationId: listCases
+      parameters:
+      - explode: true
+        in: query
+        name: state
+        required: false
+        schema:
+          enum:
+          - OPEN
+          - APPROVED
+          - REJECTED
+          - ESCALATED
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: fromDate
+        required: false
+        schema:
+          format: date-time
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: toDate
+        required: false
+        schema:
+          format: date-time
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: size
+        required: false
+        schema:
+          default: 20
+          maximum: 100
+          minimum: 1
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaseListResponse"
+          description: Cases fetched successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Missing or invalid API Key.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Internal server error.
+      summary: List review cases
+      tags:
+      - Cases
+      x-proxy-route:
+        methods:
+        - GET
+        plugins:
+        - name: rate-limiting
+          config:
+            minute: 200
+      x-accepts: application/json
+      x-tags:
+      - tag: Cases
+components:
+  responses:
+    BadRequest:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+      description: Invalid request payload or parameters.
+    Unauthorized:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+      description: Missing or invalid API Key.
+    NotFound:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+      description: Resource not found.
+    InternalError:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+      description: Internal server error.
+  schemas:
+    ScoreRequest:
+      example:
+        amount: 1899.0
+        deviceFingerprint: df_8a7b6c5d
+        shippingCountry: NG
+        customerId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        ipAddress: 203.0.113.42
+        billingCountry: US
+        currency: USD
+        transactionId: TXN-2026-99182
+      properties:
+        transactionId:
+          example: TXN-2026-99182
+          type: string
+        customerId:
+          format: uuid
+          type: string
+        amount:
+          example: 1899.0
+          format: double
+          type: number
+        currency:
+          example: USD
+          type: string
+        ipAddress:
+          example: 203.0.113.42
+          type: string
+        deviceFingerprint:
+          example: df_8a7b6c5d
+          type: string
+        billingCountry:
+          example: US
+          type: string
+        shippingCountry:
+          example: NG
+          type: string
+      required:
+      - amount
+      - currency
+      - transactionId
+      type: object
+    ScoreResponse:
+      example:
+        recommendation: REVIEW
+        riskScore: 82
+        evaluatedAt: 2000-01-23T04:56:07.000+00:00
+        transactionId: TXN-2026-99182
+        triggeredRules:
+        - GEO_MISMATCH
+        - HIGH_VALUE_NEW_CUSTOMER
+      properties:
+        transactionId:
+          example: TXN-2026-99182
+          type: string
+        riskScore:
+          example: 82
+          maximum: 100
+          minimum: 0
+          type: integer
+        recommendation:
+          enum:
+          - ALLOW
+          - REVIEW
+          - BLOCK
+          example: REVIEW
+          type: string
+        triggeredRules:
+          example:
+          - GEO_MISMATCH
+          - HIGH_VALUE_NEW_CUSTOMER
+          items:
+            type: string
+          type: array
+        evaluatedAt:
+          format: date-time
+          type: string
+      type: object
+    Rule:
+      example:
+        severity: HIGH
+        code: GEO_MISMATCH
+        expression: billingCountry != shippingCountry
+        description: Billing and shipping countries differ
+        scoreWeight: 25
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        priority: 10
+        enabled: true
+      properties:
+        id:
+          format: uuid
+          type: string
+        code:
+          example: GEO_MISMATCH
+          type: string
+        description:
+          example: Billing and shipping countries differ
+          type: string
+        expression:
+          example: billingCountry != shippingCountry
+          type: string
+        severity:
+          enum:
+          - LOW
+          - MEDIUM
+          - HIGH
+          - CRITICAL
+          example: HIGH
+          type: string
+        scoreWeight:
+          example: 25
+          type: integer
+        priority:
+          example: 10
+          type: integer
+        enabled:
+          example: true
+          type: boolean
+      type: object
+    CreateRuleRequest:
+      example:
+        severity: LOW
+        code: VELOCITY_5_IN_1H
+        expression: txnCountLastHour > 5
+        description: More than five transactions in one hour
+        scoreWeight: 30
+        priority: 20
+      properties:
+        code:
+          example: VELOCITY_5_IN_1H
+          type: string
+        description:
+          example: More than five transactions in one hour
+          type: string
+        expression:
+          example: txnCountLastHour > 5
+          type: string
+        severity:
+          enum:
+          - LOW
+          - MEDIUM
+          - HIGH
+          - CRITICAL
+          type: string
+        scoreWeight:
+          example: 30
+          maximum: 100
+          minimum: 0
+          type: integer
+        priority:
+          example: 20
+          type: integer
+      required:
+      - code
+      - expression
+      - severity
+      type: object
+    UpdateRuleRequest:
+      example:
+        severity: LOW
+        expression: txnCountLastHour > 8
+        description: description
+        scoreWeight: 0
+        enabled: false
+      properties:
+        description:
+          type: string
+        expression:
+          example: txnCountLastHour > 8
+          type: string
+        severity:
+          enum:
+          - LOW
+          - MEDIUM
+          - HIGH
+          - CRITICAL
+          type: string
+        scoreWeight:
+          type: integer
+        enabled:
+          example: false
+          type: boolean
+      type: object
+    ReviewCase:
+      example:
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        riskScore: 82
+        state: OPEN
+        closedAt: 2000-01-23T04:56:07.000+00:00
+        transactionId: TXN-2026-99182
+        assignedTo: analyst@probestack.io
+        openedAt: 2000-01-23T04:56:07.000+00:00
+      properties:
+        id:
+          format: uuid
+          type: string
+        transactionId:
+          example: TXN-2026-99182
+          type: string
+        riskScore:
+          example: 82
+          type: integer
+        state:
+          enum:
+          - OPEN
+          - APPROVED
+          - REJECTED
+          - ESCALATED
+          example: OPEN
+          type: string
+        assignedTo:
+          example: analyst@probestack.io
+          format: email
+          type: string
+        openedAt:
+          format: date-time
+          type: string
+        closedAt:
+          format: date-time
+          type: string
+      type: object
+    CaseListResponse:
+      example:
+        size: 6
+        totalPages: 5
+        page: 0
+        content:
+        - id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          riskScore: 82
+          state: OPEN
+          closedAt: 2000-01-23T04:56:07.000+00:00
+          transactionId: TXN-2026-99182
+          assignedTo: analyst@probestack.io
+          openedAt: 2000-01-23T04:56:07.000+00:00
+        - id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          riskScore: 82
+          state: OPEN
+          closedAt: 2000-01-23T04:56:07.000+00:00
+          transactionId: TXN-2026-99182
+          assignedTo: analyst@probestack.io
+          openedAt: 2000-01-23T04:56:07.000+00:00
+        totalElements: 1
+      properties:
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+        content:
+          items:
+            $ref: "#/components/schemas/ReviewCase"
+          type: array
+      type: object
+    ErrorResponse:
+      properties:
+        status:
+          type: integer
+        errorCode:
+          type: string
+        message:
+          type: string
+        timestamp:
+          format: date-time
+          type: string
+        path:
+          type: string
+      required:
+      - message
+      - status
+      type: object
+  securitySchemes:
+    ApiKeyAuth:
+      description: API Key required for all gateway requests.
+      in: header
+      name: X-API-Key
+      type: apiKey

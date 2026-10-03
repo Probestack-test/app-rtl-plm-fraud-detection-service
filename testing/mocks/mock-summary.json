@@ -1,0 +1,7 @@
+{
+  "artifactId" : "fraud-detection-service",
+  "status" : "NO_MOCKS_FOUND",
+  "message" : "No mock services found for microserviceId",
+  "endpointCount" : 0,
+  "generatedAt" : "2026-10-03T22:22:40.388892977Z"
+}
